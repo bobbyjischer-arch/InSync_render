@@ -1,0 +1,31 @@
+[Unit]
+Description=InSync — web app for event coordination
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User=insync
+Group=insync
+WorkingDirectory=/opt/insync
+Environment=PATH=/opt/insync/venv/bin
+ExecStart=/opt/insync/venv/bin/uvicorn main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 2 \
+    --log-level info \
+    --no-access-log
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/insync/static/avatars /opt/insync/complaints.enc
+
+[Install]
+WantedBy=multi-user.target
