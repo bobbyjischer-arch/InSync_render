@@ -1,0 +1,176 @@
+body {
+    background: radial-gradient(circle at 10% 30%, #0a0f1e, #03050b);
+    color: #eef2ff;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.glass {
+    background: rgba(15, 25, 45, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2rem;
+    transition: all 0.3s ease;
+}
+
+.glass:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* BUG FIX: glass-card was defined inline in individual templates but missing
+   from the global stylesheet, causing inconsistency and duplication. */
+.glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2.5rem;
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #eef2ff, #818cf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    border-radius: 9999px;
+    transition: width 0.5s ease-out;
+    width: var(--progress-width, 0%);
+}
+
+input, textarea, select {
+    transition: all 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Autocomplete suggestions */
+.suggestions {
+    position: absolute;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: calc(100% - 2rem);
+    margin-top: 0.25rem;
+}
+
+.suggestions div {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.suggestions div:hover {
+    background: rgba(129, 140, 248, 0.2);
+}
+
+/* Datetime picker dark mode */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+select {
+    background-color: rgba(0,0,0,0.5);
+    color: #eef2ff;
+    border-radius: 0.75rem;
+    padding: 0.25rem;
+}
+
+input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+select option {
+    background-color: #0a0f1e;
+    color: #eef2ff;
+}
+
+/* Leaflet map container */
+#map, #event_map {
+    height: 300px;
+    border-radius: 1rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Profile stats */
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-3px);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Reminder slider */
+.reminder-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #818cf8;
+    cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(129,140,248,0.25);
+    transition: box-shadow 0.2s;
+}
+
+.reminder-slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 5px rgba(129,140,248,0.35);
+}
+
+.reminder-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #818cf8;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 0 3px rgba(129,140,248,0.25);
+}
