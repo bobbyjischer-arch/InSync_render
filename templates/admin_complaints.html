@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Жалобы и запросы — {{ project_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <a href="/" class="text-gray-400 hover:text-white inline-flex items-center gap-2 group">
+                <span class="group-hover:-translate-x-1 transition-transform">←</span> На главную
+            </a>
+            <a href="/profile/1" class="text-gray-400 hover:text-white transition-colors text-sm">Мой профиль</a>
+        </div>
+
+        <div class="glass-card p-8 md:p-10">
+            <h1 class="text-3xl font-black mb-6">Жалобы и запросы на сброс пароля</h1>
+            {% if complaints %}
+                <div class="space-y-4">
+                    {% for c in complaints %}
+                        <div class="p-4 bg-white/5 rounded-xl border border-white/10 {% if not c.resolved %}border-indigo-500/50 bg-indigo-500/10{% endif %}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="font-semibold">{{ c.user_name }} (ID: {{ c.user_id }})</p>
+                                    <p class="text-xs text-gray-400">Email: {{ c.email }}</p>
+                                    <p class="text-xs text-gray-400">{{ c.timestamp | datetime }}</p>
+                                </div>
+                                {% if not c.resolved %}
+                                    <!-- BUG FIX: complaint IDs are now UUIDs (strings), passed as data attributes -->
+                                    <button onclick="resolve(this)" data-id="{{ c.id }}"
+                                            class="bg-green-600 hover:bg-green-500 text-xs px-3 py-1 rounded">
+                                        Пометить решённой
+                                    </button>
+                                {% else %}
+                                    <span class="text-gray-500 text-xs">Решено</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-gray-300 text-sm">{{ c.message }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-400 text-center py-8">Нет жалоб или запросов</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        async function resolve(btn) {
+            const id = btn.dataset.id;
+            await fetch(`/admin/complaints/${id}/resolve`, { method: 'POST' });
+            location.reload();
+        }
+    </script>
+</body>
+</html>

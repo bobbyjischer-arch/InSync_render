@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация — {{ project_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="flex items-center justify-center min-h-screen p-3 sm:p-6">
+    <div class="max-w-sm w-full text-center">
+        <a href="/" class="text-gray-500 hover:text-white mb-6 sm:mb-10 inline-block transition-colors text-sm sm:text-base">← На главную</a>
+
+        <div class="glass p-6 sm:p-8 md:p-10">
+            <div class="text-4xl sm:text-5xl md:text-6xl mb-4 sm:mb-6 md:mb-8">📝</div>
+            <h1 class="text-2xl sm:text-3xl font-black mb-3 sm:mb-4">Регистрация</h1>
+            <p class="text-gray-400 mb-6 sm:mb-8 md:mb-10 text-xs sm:text-sm font-light">Создайте аккаунт, чтобы создавать свои встречи</p>
+
+            {% if error == 'name_taken' %}
+                <p class="text-red-400 text-xs sm:text-sm mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">Пользователь с таким именем уже существует</p>
+            {% elif error == 'email_taken' %}
+                <p class="text-red-400 text-xs sm:text-sm mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">Пользователь с таким email уже зарегистрирован</p>
+            {% elif error == 'weak_password' %}
+                <p class="text-red-400 text-xs sm:text-sm mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">Пароль слишком слабый. Минимум 8 символов, цифра, строчная и заглавная буква</p>
+            {% elif error == 'email_invalid' %}
+                <p class="text-red-400 text-xs sm:text-sm mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">Такой email не существует. Проверьте адрес и попробуйте снова.</p>
+            {% elif error == 'unknown' %}
+                <p class="text-red-400 text-xs sm:text-sm mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">Произошла ошибка при регистрации. Попробуйте позже.</p>
+            {% endif %}
+
+            <form action="/register" method="post" class="space-y-4 sm:space-y-6">
+                <div>
+                    <input type="text" name="name" required placeholder="Имя пользователя"
+                           class="w-full bg-white/5 border border-white/10 text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl outline-none focus:ring-2 ring-indigo-500 text-sm sm:text-base">
+                </div>
+                <div>
+                    <input type="email" name="email" required placeholder="Email адрес"
+                           class="w-full bg-white/5 border border-white/10 text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl outline-none focus:ring-2 ring-indigo-500 text-sm sm:text-base">
+                </div>
+                <div>
+                    <div class="relative">
+                        <input type="password" name="password" id="password" required placeholder="Пароль"
+                               class="w-full bg-white/5 border border-white/10 text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl outline-none focus:ring-2 ring-indigo-500 pr-12 text-sm sm:text-base">
+                        <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors text-lg sm:text-xl">
+                            👁️
+                        </button>
+                    </div>
+
+                    <div class="text-left mt-2 text-[10px] sm:text-xs text-gray-400" id="password-hint">
+                        Пароль должен содержать:
+                        <ul class="list-disc list-inside mt-1 space-y-0.5 sm:space-y-1">
+                            <li class="hint-length text-gray-400">минимум 8 символов</li>
+                            <li class="hint-digit text-gray-400">хотя бы одну цифру</li>
+                            <li class="hint-lower text-gray-400">хотя бы одну строчную букву</li>
+                            <li class="hint-upper text-gray-400">хотя бы одну заглавную букву</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 sm:py-4 md:py-5 rounded-xl sm:rounded-2xl font-black transition-all shadow-xl active:scale-95 text-sm sm:text-base">
+                    Зарегистрироваться
+                </button>
+            </form>
+            <p class="mt-4 sm:mt-6 text-gray-500 text-xs sm:text-sm">
+                Уже есть аккаунт? <a href="/login" class="text-indigo-400 hover:underline">Войти</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+
+        const hintItems = {
+            length: document.querySelector('.hint-length'),
+            digit: document.querySelector('.hint-digit'),
+            lower: document.querySelector('.hint-lower'),
+            upper: document.querySelector('.hint-upper')
+        };
+
+        passwordInput.addEventListener('input', function() {
+            const val = this.value;
+
+            if (val.length >= 8) {
+                hintItems.length.classList.add('text-green-400');
+                hintItems.length.classList.remove('text-gray-400');
+            } else {
+                hintItems.length.classList.remove('text-green-400');
+                hintItems.length.classList.add('text-gray-400');
+            }
+
+            if (/\d/.test(val)) {
+                hintItems.digit.classList.add('text-green-400');
+                hintItems.digit.classList.remove('text-gray-400');
+            } else {
+                hintItems.digit.classList.remove('text-green-400');
+                hintItems.digit.classList.add('text-gray-400');
+            }
+
+            if (/[a-z]/.test(val)) {
+                hintItems.lower.classList.add('text-green-400');
+                hintItems.lower.classList.remove('text-gray-400');
+            } else {
+                hintItems.lower.classList.remove('text-green-400');
+                hintItems.lower.classList.add('text-gray-400');
+            }
+
+            if (/[A-Z]/.test(val)) {
+                hintItems.upper.classList.add('text-green-400');
+                hintItems.upper.classList.remove('text-gray-400');
+            } else {
+                hintItems.upper.classList.remove('text-green-400');
+                hintItems.upper.classList.add('text-gray-400');
+            }
+        });
+    </script>
+</body>
+</html>

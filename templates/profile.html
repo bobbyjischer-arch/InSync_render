@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль {{ user.first_name }} — {{ project_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        @media (min-width: 640px) {
+            .stat-card {
+                padding: 1.5rem;
+            }
+        }
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        @media (min-width: 640px) {
+            .stat-value {
+                font-size: 2.5rem;
+            }
+        }
+        .tab-button.active {
+            background: rgba(129, 140, 248, 0.2);
+            color: #818cf8;
+            border-color: #818cf8;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        @media (min-width: 640px) {
+            .glass-card {
+                border-radius: 2.5rem;
+            }
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-4 md:p-8 min-h-screen">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
+            <a href="/" class="text-gray-400 hover:text-white inline-flex items-center gap-2 transition-colors group text-sm sm:text-base">
+                <span class="group-hover:-translate-x-1 transition-transform">←</span> На главную
+            </a>
+            <div class="flex gap-2 sm:gap-3 items-center">
+                {% if is_owner %}
+                    <a href="/notifications" class="text-gray-400 hover:text-white transition-colors text-lg sm:text-xl flex items-center gap-1 relative">
+                        🔔
+                        {% if notifications_count > 0 %}
+                            <span class="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white text-[10px] sm:text-xs rounded-full w-4 h-4 flex items-center justify-center">{{ notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="/profile/{{ user.id }}/settings" class="text-gray-400 hover:text-white transition-colors text-[10px] sm:text-sm flex items-center gap-1">
+                        <span class="text-base sm:text-lg">⚙️</span> <span class="hidden sm:inline">Настройки</span>
+                    </a>
+                    <a href="/logout" class="text-gray-400 hover:text-red-400 transition-colors text-[10px] sm:text-sm flex items-center gap-1">
+                        <span class="text-base sm:text-lg">🚪</span> <span class="hidden sm:inline">Выйти</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="glass-card p-4 sm:p-6 md:p-8 lg:p-12 mb-6 sm:mb-8 md:mb-10 flex flex-col md:flex-row items-center gap-4 sm:gap-6 md:gap-8 relative overflow-hidden">
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"></div>
+
+            <div class="relative z-10">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar }}" alt="avatar" class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover border-4 border-indigo-500/30 shadow-xl">
+                {% else %}
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-3xl sm:text-4xl md:text-5xl font-black shadow-xl shadow-indigo-500/30">
+                        {{ user.first_name[0] }}
+                    </div>
+                {% endif %}
+
+                {% if is_owner %}
+                <div class="flex gap-2 mt-3 sm:mt-4 justify-center">
+                    <form action="/profile/avatar" method="post" enctype="multipart/form-data">
+                        <label for="avatar-upload" class="cursor-pointer bg-white/5 hover:bg-white/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs transition-all inline-flex items-center gap-1">
+                            📸 <span class="hidden sm:inline">Загрузить</span>
+                        </label>
+                        <input type="file" id="avatar-upload" name="file" accept="image/*" class="hidden" onchange="this.form.submit()">
+                    </form>
+                    {% if user.avatar %}
+                    <form action="/profile/avatar/delete" method="post">
+                        <button type="submit" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs transition-all">
+                            🗑️ <span class="hidden sm:inline">Удалить</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="text-center md:text-left relative z-10">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 break-words">{{ user.first_name }}</h1>
+                <div class="flex flex-wrap justify-center md:justify-start gap-2 sm:gap-4 text-[10px] sm:text-xs md:text-sm text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                        Зарегистрирован {{ user.created_at|datetime if user.created_at else "недавно" }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                        📅 ID: {{ user.id }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-5 mb-6 sm:mb-8 md:mb-12">
+            <div class="stat-card">
+                <div class="stat-value">{{ created_count }}</div>
+                <div class="text-gray-400 text-[10px] sm:text-xs md:text-sm uppercase tracking-wider mt-1">Создано встреч</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ participated_count }}</div>
+                <div class="text-gray-400 text-[10px] sm:text-xs md:text-sm uppercase tracking-wider mt-1">Участий</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_guests }}</div>
+                <div class="text-gray-400 text-[10px] sm:text-xs md:text-sm uppercase tracking-wider mt-1">Приглашено гостей</div>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 mb-4 sm:mb-6 md:mb-8 border-b border-white/10 pb-3 sm:pb-4">
+            <button class="tab-button active px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all" data-tab="created">
+                🎉 Созданные мной
+            </button>
+            <button class="tab-button px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all text-gray-400 hover:text-white" data-tab="participated">
+                🤝 Где я участвую
+            </button>
+        </div>
+
+        <div id="created-tab" class="tab-content">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                <span class="w-1 h-6 sm:h-8 bg-indigo-500 rounded-full"></span>
+                Мои мероприятия
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+                {% for event in created_events %}
+                <div class="glass-card p-4 sm:p-5 md:p-6 group flex flex-col">
+                    <div class="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                        <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 sm:px-3 py-1 rounded-full break-all">
+                            {{ event.icon_emoji or event.type | event_type_icon }} {{ event.type }}
+                        </span>
+                        <span class="text-[10px] text-gray-500 shrink-0">{{ event.planned_datetime | datetime }}</span>
+                    </div>
+                    <h3 class="font-bold text-base sm:text-lg mb-2 group-hover:text-indigo-300 transition-colors break-words">{{ event.title }}</h3>
+                    <p class="text-gray-400 text-xs mb-3 sm:mb-4 line-clamp-2">{{ event.description or "Без описания" }}</p>
+
+                    <div class="mb-3 sm:mb-4">
+                        <div class="flex justify-between text-[10px] mb-1 text-gray-500">
+                            <span>Участников</span>
+                            <span class="font-bold text-gray-300">{{ event.confirmed_count }}/{{ event.max_participants }}</span>
+                        </div>
+                        {% if event.max_participants > 0 %}
+                            {% set p = (event.confirmed_count / event.max_participants * 100) | round %}
+                        {% else %}
+                            {% set p = 0 %}
+                        {% endif %}
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="--progress-width: {{ p }}%;"></div>
+                        </div>
+                    </div>
+
+                    {% if event.confirmed_count >= event.max_participants %}
+                        <div class="text-center text-red-400 text-xs mb-3 sm:mb-4">⚠️ Мест нет</div>
+                    {% endif %}
+
+                    {% if is_owner %}
+                    <div class="flex gap-2 mt-auto pt-3 sm:pt-4 border-t border-white/5">
+                        <a href="/event/{{ event.id }}/edit" class="flex-1 text-center bg-white/5 hover:bg-white/10 py-2 rounded-xl text-xs transition-all">
+                            ✏️ <span class="hidden sm:inline">Изменить</span>
+                        </a>
+                        <form action="/event/{{ event.id }}/delete" method="post" class="flex-1" onsubmit="return confirm('Удалить встречу?')">
+                            <button type="submit" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-xs transition-all">
+                                🗑️ <span class="hidden sm:inline">Удалить</span>
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="mt-auto pt-3 sm:pt-4 border-t border-white/5 text-center text-xs text-gray-500">
+                        Участник
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="col-span-full py-12 sm:py-16 text-center glass-card border-dashed">
+                    <p class="text-gray-500 italic text-sm sm:text-base">Событий пока нет</p>
+                    {% if is_owner %}
+                    <a href="/create" class="inline-block mt-3 sm:mt-4 bg-indigo-600 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-500 transition-all">
+                        + Создать первую встречу
+                    </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="participated-tab" class="tab-content hidden">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                <span class="w-1 h-6 sm:h-8 bg-purple-500 rounded-full"></span>
+                Мероприятия, в которых я участвую
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+                {% for event in participated_events %}
+                <div class="glass-card p-4 sm:p-5 md:p-6 group flex flex-col">
+                    <div class="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                        <span class="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-2 sm:px-3 py-1 rounded-full break-all">
+                            {{ event.icon_emoji or event.type | event_type_icon }} {{ event.type }}
+                        </span>
+                        <span class="text-[10px] text-gray-500 shrink-0">{{ event.planned_datetime | datetime }}</span>
+                    </div>
+                    <h3 class="font-bold text-base sm:text-lg mb-2 group-hover:text-purple-300 transition-colors break-words">{{ event.title }}</h3>
+                    <p class="text-gray-400 text-xs mb-3 sm:mb-4 line-clamp-2">{{ event.description or "Без описания" }}</p>
+
+                    <div class="mb-3 sm:mb-4">
+                        <div class="flex justify-between text-[10px] mb-1 text-gray-500">
+                            <span>Участников</span>
+                            <span class="font-bold text-gray-300">{{ event.confirmed_count }}/{{ event.max_participants }}</span>
+                        </div>
+                        {% if event.max_participants > 0 %}
+                            {% set p = (event.confirmed_count / event.max_participants * 100) | round %}
+                        {% else %}
+                            {% set p = 0 %}
+                        {% endif %}
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="--progress-width: {{ p }}%;"></div>
+                        </div>
+                    </div>
+
+                    {% if event.confirmed_count >= event.max_participants %}
+                        <span class="mt-auto pt-3 sm:pt-4 border-t border-white/5 text-center text-xs sm:text-sm text-red-400">
+                            Мест нет
+                        </span>
+                    {% else %}
+                        <a href="/join/{{ event.invite_code }}" class="mt-auto pt-3 sm:pt-4 border-t border-white/5 text-center text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                            Перейти к событию →
+                        </a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="col-span-full py-12 sm:py-16 text-center glass-card border-dashed">
+                    <p class="text-gray-500 italic text-sm sm:text-base">Вы пока не участвуете ни в одной встрече</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => {
+                    b.classList.remove('active', 'text-indigo-400', 'bg-indigo-500/10');
+                });
+                btn.classList.add('active', 'text-indigo-400', 'bg-indigo-500/10');
+                
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                document.getElementById(tab + '-tab').classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

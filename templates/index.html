@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project_name }} — Главная</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.5s ease-out forwards;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+        .delay-600 { animation-delay: 0.6s; }
+
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .glass {
+            transition: all 0.3s ease;
+        }
+
+        .glass:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
+
+        /* Custom Icons */
+        .custom-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .custom-icon-lg {
+            width: 48px;
+            height: 48px;
+        }
+
+        .custom-icon-xl {
+            width: 64px;
+            height: 64px;
+        }
+
+        a:hover .custom-icon {
+            transform: scale(1.1);
+        }
+
+        .progress-fill {
+            transition: width 1s ease-out;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-4 md:p-10">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 sm:mb-12 gap-4 animate-fade-in">
+            <div>
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-black gradient-text tracking-tighter">{{ project_name }}</h1>
+                <p class="text-gray-400 mt-1 sm:mt-2 font-light text-sm sm:text-base">Твое пространство для реальных встреч</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+
+
+                {% if user %}
+                    <a href="/profile/{{ user.id }}" class="glass px-3 sm:px-4 py-2 sm:py-3 rounded-xl flex items-center hover:text-indigo-400 transition-all gap-2 text-sm flex-shrink-0 animate-slide-in-right delay-100">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar }}" alt="{{ user.first_name }}" class="custom-icon rounded-full object-cover" style="width:24px;height:24px;">
+                        {% else %}
+                            <svg class="custom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        {% endif %}
+                        <span class="max-w-[100px] sm:max-w-none truncate">{{ user.first_name }}</span>
+                    </a>
+                    <a href="/notifications" class="glass px-3 sm:px-4 py-2 sm:py-3 rounded-xl flex items-center relative flex-shrink-0 animate-slide-in-right delay-200">
+                        <svg class="custom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        {% if notifications_count > 0 %}
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">{{ notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="/logout" class="glass px-3 sm:px-4 py-2 sm:py-3 rounded-xl flex items-center hover:text-red-400 transition-all gap-2 text-sm flex-shrink-0 animate-slide-in-right delay-300" title="Выйти">
+                        <svg class="custom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span class="hidden sm:inline">Выйти</span>
+                    </a>
+                {% else %}
+                    <a href="/login" class="glass px-4 sm:px-6 py-2 sm:py-3 rounded-xl flex items-center hover:text-indigo-400 transition-all gap-2 text-sm flex-shrink-0 animate-slide-in-right delay-100">
+                        <svg class="custom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        Войти
+                    </a>
+                    <a href="/register" class="bg-indigo-600 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold hover:bg-indigo-500 transition-all text-sm flex-shrink-0 animate-slide-in-right delay-200 hover:scale-105">
+                        Регистрация
+                    </a>
+                {% endif %}
+            </div>
+        </header>
+
+        {% if user %}
+        <!-- Dashboard для авторизованных -->
+        <div class="mb-8 sm:mb-12">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 animate-fade-in-up">Привет, {{ user.first_name }}! 👋</h2>
+
+            <!-- Статистика -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div class="glass p-4 sm:p-6 rounded-xl sm:rounded-2xl animate-scale-in delay-100 card-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <svg class="custom-icon text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <div class="text-2xl sm:text-3xl font-black text-indigo-400">{{ events|length }}</div>
+                    </div>
+                    <div class="text-xs sm:text-sm text-gray-400">Всего событий</div>
+                </div>
+                <div class="glass p-4 sm:p-6 rounded-xl sm:rounded-2xl animate-scale-in delay-200 card-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <svg class="custom-icon text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                        <div class="text-2xl sm:text-3xl font-black text-green-400">
+                            {{ events|selectattr('confirmed_count', 'gt', 0)|list|length }}
+                        </div>
+                    </div>
+                    <div class="text-xs sm:text-sm text-gray-400">Активных</div>
+                </div>
+                <div class="glass p-4 sm:p-6 rounded-xl sm:rounded-2xl animate-scale-in delay-300 card-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <svg class="custom-icon text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <div class="text-2xl sm:text-3xl font-black text-blue-400">
+                            {% set total_participants = namespace(count=0) %}
+                            {% for event in events %}
+                                {% set total_participants.count = total_participants.count + event.confirmed_count %}
+                            {% endfor %}
+                            {{ total_participants.count }}
+                        </div>
+                    </div>
+                    <div class="text-xs sm:text-sm text-gray-400">Участников</div>
+                </div>
+                <div class="glass p-4 sm:p-6 rounded-xl sm:rounded-2xl animate-scale-in delay-400 card-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <svg class="custom-icon text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <div class="text-2xl sm:text-3xl font-black text-purple-400">{{ notifications_count }}</div>
+                    </div>
+                    <div class="text-xs sm:text-sm text-gray-400">Уведомлений</div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12">
+                <a href="/create" class="bg-gradient-to-br from-indigo-600 to-purple-600 p-6 sm:p-8 rounded-2xl hover:scale-105 transition-all shadow-xl shadow-indigo-500/20 group animate-fade-in-up delay-100 animate-pulse-glow">
+                    <svg class="custom-icon-lg text-white mb-3 sm:mb-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    <h3 class="text-lg sm:text-xl font-black mb-1 sm:mb-2 group-hover:text-white transition-colors">Создать событие</h3>
+                    <p class="text-xs sm:text-sm text-indigo-200">Организуй новую встречу</p>
+                </a>
+
+                <a href="/join" class="glass p-6 sm:p-8 rounded-2xl hover:scale-105 transition-all group border border-white/10 animate-fade-in-up delay-200 card-hover">
+                    <svg class="custom-icon-lg text-blue-400 mb-3 sm:mb-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <h3 class="text-lg sm:text-xl font-black mb-1 sm:mb-2 group-hover:text-blue-400 transition-colors">Присоединиться</h3>
+                    <p class="text-xs sm:text-sm text-gray-400">Введи код события</p>
+                </a>
+
+                <!-- ✅ Исправленная ссылка на настройки -->
+                <a href="/profile/{{ user.id }}/settings" class="glass p-6 sm:p-8 rounded-2xl hover:scale-105 transition-all group border border-white/10 animate-fade-in-up delay-300 card-hover">
+                    <svg class="custom-icon-lg text-gray-300 mb-3 sm:mb-4 group-hover:scale-110 transition-transform group-hover:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <h3 class="text-lg sm:text-xl font-black mb-1 sm:mb-2 group-hover:text-gray-300 transition-colors">Настройки</h3>
+                    <p class="text-xs sm:text-sm text-gray-400">Управляй профилем</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- События -->
+        <div class="mb-6 sm:mb-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 animate-fade-in-up">Твои события 📅</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {% for event in events %}
+                <div class="glass p-4 sm:p-6 flex flex-col h-full relative group hover:border-indigo-500/30 transition-all animate-fade-in-up delay-{{ loop.index }}00 card-hover">
+                    <div class="flex justify-between items-start mb-4 gap-2">
+                        <span class="px-2 sm:px-3 py-1 rounded-full bg-white/5 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold text-indigo-300 border border-indigo-500/20 flex-shrink-0">
+                            {{ event.icon_emoji or event.type | event_type_icon }} {{ event.type }}
+                        </span>
+                        <span class="text-gray-500 text-[10px] sm:text-xs font-mono flex-shrink-0">
+                            {{ event.planned_datetime | datetime }}
+                        </span>
+                    </div>
+
+                    <h3 class="text-lg sm:text-xl font-black mb-2 sm:mb-3 group-hover:text-indigo-400 transition-colors break-words">{{ event.title }}</h3>
+                    <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 line-clamp-2 font-light leading-relaxed">
+                        {{ event.description or "Без описания" }}
+                    </p>
+
+                    <div class="mt-auto space-y-3 sm:space-y-4">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500 uppercase tracking-tighter">Участники</span>
+                            <span class="font-bold text-white">{{ event.confirmed_count }} / {{ event.max_participants }}</span>
+                        </div>
+
+                        {% if event.max_participants > 0 %}
+                            {% set p = (event.confirmed_count / event.max_participants * 100) | round %}
+                        {% else %}
+                            {% set p = 0 %}
+                        {% endif %}
+
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="--progress-width: {{ p }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 mt-4 border-t border-white/5 gap-3 sm:gap-0">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-gray-500 uppercase">Код</span>
+                            <span class="font-mono text-indigo-400 font-bold tracking-widest text-sm">{{ event.invite_code }}</span>
+                        </div>
+                        <a href="/event/{{ event.id }}" class="bg-white/5 px-4 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-all w-full sm:w-auto text-center hover:scale-105">
+                            Открыть
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-span-full py-12 sm:py-16 text-center glass border-dashed flex flex-col items-center justify-center px-4 rounded-2xl animate-fade-in-up">
+                    <svg class="custom-icon-xl text-gray-600 mb-4 animate-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <p class="text-gray-500 italic text-sm sm:text-base mb-4">
+                        У тебя пока нет событий
+                    </p>
+                    <a href="/create" class="bg-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-all text-sm hover:scale-105">
+                        Создать первое событие
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Landing для неавторизованных -->
+        <div class="text-center py-12 sm:py-20">
+            <div class="max-w-3xl mx-auto">
+                <svg class="custom-icon-xl mx-auto mb-6 sm:mb-8 animate-float text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 80px; height: 80px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 gradient-text animate-fade-in-up">
+                    Организуй встречи.<br>Легко и стильно.
+                </h2>
+                <p class="text-base sm:text-lg md:text-xl text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto px-4 animate-fade-in-up delay-200">
+                    InSync — это простой способ создавать события, приглашать друзей и получать напоминания.
+                    Никаких сложных настроек, только то, что важно.
+                </p>
+
+                <!-- Преимущества -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4">
+                    <div class="glass p-6 sm:p-8 rounded-2xl animate-scale-in delay-100 card-hover">
+                        <svg class="custom-icon-lg mx-auto mb-3 sm:mb-4 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <h3 class="text-lg sm:text-xl font-bold mb-2">Быстро</h3>
+                        <p class="text-xs sm:text-sm text-gray-400">Создай событие за 30 секунд</p>
+                    </div>
+                    <div class="glass p-6 sm:p-8 rounded-2xl animate-scale-in delay-200 card-hover">
+                        <svg class="custom-icon-lg mx-auto mb-3 sm:mb-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <h3 class="text-lg sm:text-xl font-bold mb-2">Умные напоминания</h3>
+                        <p class="text-xs sm:text-sm text-gray-400">Никто не забудет о встрече</p>
+                    </div>
+                    <div class="glass p-6 sm:p-8 rounded-2xl animate-scale-in delay-300 card-hover">
+                        <svg class="custom-icon-lg mx-auto mb-3 sm:mb-4 text-pink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                        </svg>
+                        <h3 class="text-lg sm:text-xl font-bold mb-2">Стильно</h3>
+                        <p class="text-xs sm:text-sm text-gray-400">Современный дизайн</p>
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 animate-fade-in-up delay-400">
+                    <a href="/register" class="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 sm:px-12 py-4 rounded-2xl font-black text-base sm:text-lg hover:scale-105 transition-all shadow-2xl shadow-indigo-500/30 w-full sm:w-auto animate-pulse-glow">
+                        Начать бесплатно
+                    </a>
+                    <a href="/join" class="glass px-8 sm:px-12 py-4 rounded-2xl font-bold text-base sm:text-lg hover:scale-105 transition-all border border-white/10 w-full sm:w-auto">
+                        У меня есть код
+                    </a>
+                </div>
+
+                <p class="text-xs sm:text-sm text-gray-500 mt-6 sm:mt-8 px-4 animate-fade-in delay-500">
+                    Уже есть аккаунт? <a href="/login" class="text-indigo-400 hover:underline">Войти</a>
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

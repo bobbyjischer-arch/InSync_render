@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создать встречу — InSync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+        select {
+            background-color: rgba(0,0,0,0.5);
+            color: #eef2ff;
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+        }
+        input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+        select option {
+            background-color: #0a0f1e;
+            color: #eef2ff;
+        }
+        .suggestions {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+        .suggestions div {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.875rem;
+        }
+        .suggestions div:hover {
+            background: rgba(129, 140, 248, 0.2);
+        }
+        .suggestions div:not(:last-child) {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #map {
+            height: 250px;
+            border-radius: 1rem;
+            margin-top: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        @media (min-width: 640px) {
+            #map {
+                height: 300px;
+                margin-top: 1rem;
+            }
+            .suggestions div {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-4 md:p-10 flex flex-col items-center justify-center min-h-screen">
+    <div class="w-full max-w-xl mb-3 sm:mb-4">
+        <a href="/" class="text-gray-400 hover:text-white inline-flex items-center gap-2 transition-colors group text-sm sm:text-base">
+            <span class="group-hover:-translate-x-1 transition-transform">←</span> На главную
+        </a>
+    </div>
+
+    <div class="max-w-xl w-full glass p-4 sm:p-6 md:p-8 lg:p-12">
+        <h1 class="text-2xl sm:text-3xl font-black mb-6 sm:mb-8 text-center">Создать событие</h1>
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% if error == 'past_date' %}
+                <div class="bg-red-500/20 border border-red-500 p-3 rounded-xl text-red-300 text-xs sm:text-sm">
+                    Нельзя создать событие в прошлом!
+                </div>
+            {% elif error == 'invalid_date' %}
+                <div class="bg-red-500/20 border border-red-500 p-3 rounded-xl text-red-300 text-xs sm:text-sm">
+                    Неверный формат даты.
+                </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Название</label>
+                <input type="text" name="title" required value="{{ title or '' }}" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl text-sm sm:text-base">
+            </div>
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Описание</label>
+                <textarea name="description" rows="3" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl text-sm sm:text-base">{{ description or '' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Тип</label>
+                <select name="event_type" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl appearance-none text-sm sm:text-base">
+                    <option value="friends" {% if event_type == 'friends' %}selected{% endif %}>👥 Друзья</option>
+                    <option value="date" {% if event_type == 'date' %}selected{% endif %}>❤️ Свидание</option>
+                    <option value="colleagues" {% if event_type == 'colleagues' %}selected{% endif %}>💼 Коллеги</option>
+                    <option value="other" {% if event_type == 'other' %}selected{% endif %}>🎲 Другое</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Максимум участников</label>
+                <input type="number" name="max_participants" required value="{{ max_participants or 10 }}" min="1" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl text-sm sm:text-base">
+            </div>
+
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Иконка события</label>
+                <select name="icon_emoji" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl appearance-none text-sm sm:text-base">
+                    {% for emoji in emoji_list %}
+                        <option value="{{ emoji }}" {% if icon_emoji == emoji %}selected{% endif %}>{{ emoji }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Место встречи</label>
+                <div class="relative">
+                    <input type="text" id="location-search" placeholder="Введите адрес или название места"
+                           class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl text-sm sm:text-base">
+                    <div id="suggestions" class="suggestions hidden"></div>
+                </div>
+                <input type="text" name="location" id="location-coords" placeholder="55.751244,37.618423" required
+                       value="{{ location or '' }}" class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl mt-2 text-sm sm:text-base">
+                <div id="map"></div>
+                <p class="text-[10px] sm:text-xs text-gray-500 mt-2">Вы можете перетащить маркер на карте или ввести координаты вручную.</p>
+            </div>
+
+            <div>
+                <label class="block text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-2">Дата и время</label>
+                <input type="datetime-local" name="date" required min="{{ today }}" value="{{ date or '' }}"
+                       class="w-full bg-black/20 border border-white/10 p-2.5 sm:p-3 rounded-xl text-sm sm:text-base">
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 py-3 sm:py-4 rounded-xl font-bold hover:bg-indigo-500 transition text-sm sm:text-base">Создать</button>
+        </form>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let map;
+            let marker;
+            let currentLat = 55.751244;
+            let currentLng = 37.618423;
+
+            const coordsField = document.getElementById('location-coords');
+            if (coordsField && coordsField.value && coordsField.value.includes(',')) {
+                const parts = coordsField.value.split(',');
+                currentLat = parseFloat(parts[0]);
+                currentLng = parseFloat(parts[1]);
+                if (isNaN(currentLat) || isNaN(currentLng)) {
+                    currentLat = 55.751244;
+                    currentLng = 37.618423;
+                }
+            }
+
+            function initMap(lat, lng) {
+                const mapContainer = document.getElementById('map');
+                if (!mapContainer) return;
+                if (map) map.remove();
+                map = L.map('map').setView([lat, lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', function(e) {
+                    const pos = marker.getLatLng();
+                    currentLat = pos.lat;
+                    currentLng = pos.lng;
+                    if (coordsField) coordsField.value = `${currentLat},${currentLng}`;
+                });
+                map.on('click', function(e) {
+                    marker.setLatLng(e.latlng);
+                    currentLat = e.latlng.lat;
+                    currentLng = e.latlng.lng;
+                    if (coordsField) coordsField.value = `${currentLat},${currentLng}`;
+                });
+            }
+
+            function updateMarker(lat, lng) {
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                    map.setView([lat, lng], 13);
+                    currentLat = lat;
+                    currentLng = lng;
+                    if (coordsField) coordsField.value = `${lat},${lng}`;
+                }
+            }
+
+            const searchInput = document.getElementById('location-search');
+            const suggestionsDiv = document.getElementById('suggestions');
+            let debounceTimer;
+
+            if (searchInput && suggestionsDiv) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    const query = this.value.trim();
+                    if (query.length < 3) {
+                        suggestionsDiv.classList.add('hidden');
+                        return;
+                    }
+                    debounceTimer = setTimeout(() => {
+                        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.length === 0) {
+                                    suggestionsDiv.classList.add('hidden');
+                                    return;
+                                }
+                                suggestionsDiv.innerHTML = '';
+                                data.forEach(place => {
+                                    const div = document.createElement('div');
+                                    div.textContent = place.display_name;
+                                    div.addEventListener('click', () => {
+                                        const lat = parseFloat(place.lat);
+                                        const lon = parseFloat(place.lon);
+                                        updateMarker(lat, lon);
+                                        searchInput.value = place.display_name;
+                                        suggestionsDiv.classList.add('hidden');
+                                    });
+                                    suggestionsDiv.appendChild(div);
+                                });
+                                suggestionsDiv.classList.remove('hidden');
+                            })
+                            .catch(err => {
+                                console.error('Geocoding error:', err);
+                                suggestionsDiv.classList.add('hidden');
+                            });
+                    }, 300);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                        suggestionsDiv.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (coordsField) {
+                coordsField.addEventListener('change', function() {
+                    const parts = this.value.split(',');
+                    if (parts.length === 2) {
+                        const lat = parseFloat(parts[0]);
+                        const lng = parseFloat(parts[1]);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            updateMarker(lat, lng);
+                        }
+                    }
+                });
+            }
+
+            initMap(currentLat, currentLng);
+        });
+    </script>
+</body>
+</html>

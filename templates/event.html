@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event.title }} — {{ project_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="p-3 sm:p-4 md:p-8 min-h-screen flex items-center justify-center">
+    <div class="max-w-2xl w-full">
+        <div class="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
+            <a href="/" class="text-gray-500 hover:text-white inline-block text-sm sm:text-base">← Назад</a>
+            {% if request.cookies.get('user_id') and event.creator_id == request.cookies.get('user_id')|int %}
+                <form action="/event/{{ event.id }}/reset-code" method="post" class="inline">
+                    <button type="submit" class="text-red-400 hover:text-red-300 text-xs sm:text-sm flex items-center gap-1">
+                        🔄 <span class="hidden sm:inline">Сбросить код</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="glass p-4 sm:p-6 md:p-8 lg:p-12">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-black mb-4 sm:mb-6 break-words">{{ event.icon_emoji or event.type | event_type_icon }} {{ event.title }}</h1>
+
+            {% if event.description %}
+            <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10">
+                <p class="text-gray-300 text-xs sm:text-sm leading-relaxed">{{ event.description }}</p>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div class="bg-white/5 p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl border border-white/5">
+                    <span class="text-[9px] sm:text-[10px] text-gray-500 uppercase block mb-1 sm:mb-2">Время</span>
+                    <p class="text-white font-bold text-xs sm:text-sm md:text-base">{{ event.planned_datetime | datetime }}</p>
+                </div>
+                <div class="bg-white/5 p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl border border-white/5">
+                    <span class="text-[9px] sm:text-[10px] text-gray-500 uppercase block mb-1 sm:mb-2">Места</span>
+                    <p class="text-white font-bold text-xs sm:text-sm md:text-base">{{ event.confirmed_count }} / {{ event.max_participants }}</p>
+                </div>
+            </div>
+
+            <div class="mb-6 sm:mb-8">
+                <h3 class="text-[10px] sm:text-xs uppercase tracking-widest text-gray-500 mb-3 sm:mb-4">Уже идут:</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for name in participant_names %}
+                        {% set uid = participant_ids[loop.index0] if participant_ids else None %}
+                        {% set avatar = participant_avatars[loop.index0] if participant_avatars else None %}
+                        {% if uid %}
+                            {# Registered user — clickable link to profile #}
+                            <a href="/profile/{{ uid }}"
+                               class="bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm border border-indigo-500/10 hover:border-indigo-400/40 inline-flex items-center gap-1.5 sm:gap-2 transition-all group">
+                                {% if avatar %}
+                                    <img src="{{ avatar }}" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover ring-1 ring-indigo-400/30">
+                                {% else %}
+                                    <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white ring-1 ring-indigo-400/30">
+                                        {{ name[0] | upper }}
+                                    </div>
+                                {% endif %}
+                                <span class="group-hover:text-indigo-200 transition-colors">{{ name }}</span>
+                            </a>
+                        {% else %}
+                            {# Anonymous guest — not clickable #}
+                            <span class="bg-white/5 text-gray-400 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm border border-white/10 inline-flex items-center gap-1.5 sm:gap-2">
+                                <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/10 flex items-center justify-center text-[9px] sm:text-[10px] font-bold">
+                                    {{ name[0] | upper }}
+                                </div>
+                                {{ name }}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-gray-600 italic text-xs sm:text-sm">Пока никого нет...</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="event_map" class="h-48 sm:h-56 md:h-64 rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 md:mb-12 border border-white/10"></div>
+
+            {% if event.confirmed_count >= event.max_participants %}
+                <div class="bg-red-500/10 border border-red-500/20 p-4 sm:p-6 rounded-xl sm:rounded-2xl text-center">
+                    <p class="text-red-400 font-bold text-sm sm:text-base">Мест больше нет 🛑</p>
+                </div>
+            {% elif is_participant %}
+                {# Withdraw button #}
+                <form action="/join/{{ event.invite_code }}/withdraw" method="post">
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-500 py-3 sm:py-4 rounded-xl font-black transition-all text-sm sm:text-base">
+                        Отозвать участие
+                    </button>
+                </form>
+
+                {# BUG FIX 3: registered user can still add another person after joining #}
+                <div class="mt-3 sm:mt-4">
+                    <button id="toggleAddOther"
+                            class="w-full border border-white/10 bg-white/5 hover:bg-white/10 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold text-gray-300 transition-all">
+                        + Подтвердить участие другого человека
+                    </button>
+                    <div id="addOtherForm" class="hidden mt-3">
+                        <form action="/join/{{ event.invite_code }}" method="post" class="space-y-3">
+                            <input type="hidden" name="join_as_other" value="true">
+                            <input type="text" name="guest_name" required placeholder="Имя участника"
+                                   class="w-full bg-black/20 border border-white/10 p-3 sm:p-4 rounded-xl text-white outline-none focus:ring-2 ring-indigo-500 text-sm sm:text-base">
+                            {% if request.query_params.get('error') == 'already_joined' %}
+                                <p class="text-orange-400 text-xs bg-orange-400/10 p-2 rounded">Это имя уже занято на этой встрече!</p>
+                            {% endif %}
+                            <button type="submit"
+                                    class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 sm:py-3 rounded-xl font-bold transition-all text-sm sm:text-base">
+                                Добавить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <script>
+                    document.getElementById('toggleAddOther').addEventListener('click', function() {
+                        const form = document.getElementById('addOtherForm');
+                        const isHidden = form.classList.toggle('hidden');
+                        this.textContent = isHidden
+                            ? '+ Подтвердить участие другого человека'
+                            : '× Скрыть';
+                    });
+                </script>
+            {% else %}
+                <form action="/join/{{ event.invite_code }}" method="post" class="space-y-3 sm:space-y-4" id="joinForm">
+                    {% if request.query_params.get('error') == 'already_joined' %}
+                        <p class="text-orange-400 text-xs bg-orange-400/10 p-2 rounded">Это имя уже занято на этой встрече!</p>
+                    {% elif request.query_params.get('error') == 'guest_limit' %}
+                        <p class="text-red-400 text-xs bg-red-500/10 p-2 rounded">
+                            ⚠️ Вы подтвердили слишком много встреч за последние 24 часа. Попробуйте позже или <a href="/register" class="underline">зарегистрируйтесь</a>.
+                        </p>
+                    {% endif %}
+
+                    {# BUG FIX 3: hidden fields carry the actual submitted values #}
+                    {# The visible input may be disabled (browser won't send disabled fields) #}
+                    <input type="hidden" name="guest_name"    id="guestNameHidden" value="{{ user.first_name if user else '' }}">
+                    <input type="hidden" name="join_as_other" id="joinAsOtherHidden" value="false">
+
+                    <div>
+                        {# BUG FIX 2: input color mirrors bg when name is duplicate #}
+                        <input type="text" id="guestName" required placeholder="Введите ваше имя"
+                               value="{{ user.first_name if user else '' }}"
+                               {% if user %}disabled{% endif %}
+                               class="w-full bg-black/20 border border-white/10 p-3 sm:p-4 rounded-xl text-white outline-none focus:ring-2 ring-indigo-500 transition-colors text-sm sm:text-base {% if user %}opacity-60{% endif %}">
+                        {% if user %}
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="checkbox" id="joinOtherCheckbox" class="w-3.5 h-3.5 sm:w-4 sm:h-4">
+                            <label for="joinOtherCheckbox" class="text-xs sm:text-sm text-gray-400">Подтверждаю участие за другого человека</label>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 py-3 sm:py-4 rounded-xl font-black transition-all hover:bg-indigo-500 text-sm sm:text-base">
+                        Подтвердить участие
+                    </button>
+                </form>
+
+                <script>
+                    const nameInput   = document.getElementById('guestName');
+                    const nameHidden  = document.getElementById('guestNameHidden');
+                    const otherHidden = document.getElementById('joinAsOtherHidden');
+                    const checkbox    = document.getElementById('joinOtherCheckbox');
+                    const submitBtn   = document.getElementById('submitBtn');
+                    const joinForm    = document.getElementById('joinForm');
+
+                    // BUG FIX 3: keep hidden inputs in sync so disabled visible field
+                    // values still reach the server.
+                    function syncHidden() {
+                        if (nameHidden) {
+                            nameHidden.value = nameInput.value;
+                        }
+                    }
+                    if (nameInput) nameInput.addEventListener('input', syncHidden);
+
+                    // Sync before form submission
+                    if (joinForm) {
+                        joinForm.addEventListener('submit', function(e) {
+                            syncHidden();
+                        });
+                    }
+
+                    if (checkbox) {
+                        checkbox.addEventListener('change', function() {
+                            const isOther = this.checked;
+                            nameInput.disabled = !isOther;
+                            nameInput.classList.toggle('opacity-60', !isOther);
+                            otherHidden.value = isOther ? 'true' : 'false';
+                            if (!isOther) {
+                                nameInput.value = {{ user.first_name | tojson if user else '""' }};
+                            } else {
+                                nameInput.value = '';
+                            }
+                            syncHidden();
+                        });
+                    }
+                </script>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="participant-data" data-names='{{ participant_names | tojson }}' style="display: none;"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const coords = {{ event.location | tojson }}.split(',');
+        if (coords.length === 2) {
+            var map = L.map('event_map').setView([coords[0], coords[1]], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.marker([coords[0], coords[1]]).addTo(map);
+        }
+
+        const participantData = document.getElementById('participant-data');
+        const participantNames = participantData ? JSON.parse(participantData.dataset.names) : [];
+        const input = document.getElementById('guestName');
+        const btn = document.getElementById('submitBtn');
+
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const val = e.target.value.trim();
+                if (participantNames.includes(val)) {
+                    // BUG FIX 2: blend input into background to signal collision
+                    input.style.background = 'rgba(0,0,0,0.5)';
+                    input.style.borderColor = 'rgba(239,68,68,0.4)';
+                    input.style.color = 'rgba(255,255,255,0.3)';
+                    btn.disabled = true;
+                    btn.innerText = "Вы уже в списке";
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    input.style.background = '';
+                    input.style.borderColor = '';
+                    input.style.color = '';
+                    btn.disabled = false;
+                    btn.innerText = "Подтвердить участие";
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

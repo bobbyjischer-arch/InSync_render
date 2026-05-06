@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ project_name }}{% endblock %}</title>
+
+    <!-- Preconnect для CDN -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://unpkg.com">
+
+    <!-- Критические стили первыми -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    {% block extra_css %}{% endblock %}
+
+    <!-- Tailwind defer для неблокирующей загрузки -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}bg-gradient-to-br from-dark-bg via-dark-secondary to-dark-bg min-h-screen text-white{% endblock %}">
+    {% block content %}{% endblock %}
+
+    <script src="/static/js/common.js" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
