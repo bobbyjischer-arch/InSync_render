@@ -2,35 +2,60 @@ import asyncio
 import os
 from typing import Optional
 from pathlib import Path
-
-import resend
+import httpx
 
 from config import ADMIN_EMAIL, PROJECT_NAME
 
 
 class EmailService:
-    """Сервис для отправки email через Resend"""
+    """Сервис для отправки email через MailerSend"""
 
     def __init__(self):
         self.sender_name = PROJECT_NAME
+        self.api_url = "https://api.mailersend.com/v1/email"
 
     def _send_sync(self, subject, to_email, text_body=None, html_body=None):
-        """Синхронная отправка через Resend API"""
-        api_key = os.environ.get("RESEND_API_KEY")
+        """Синхронная отправка через MailerSend API"""
+        api_key = os.environ.get("MAILERSEND_API_KEY")
         if not api_key:
-            print("[Email] RESEND_API_KEY not set, skipping")
+            print("[Email] MAILERSEND_API_KEY not set, skipping")
             return
 
-        resend.api_key = api_key
+        # MailerSend требует верифицированный домен для from
+        # Используйте ваш верифицированный email из MailerSend Dashboard
+        sender_email = os.environ.get("MAILERSEND_FROM_EMAIL", "noreply@trial-0r83ql3jr3pg2vwr.mlsender.net")
+
+        payload = {
+            "from": {
+                "email": sender_email,
+                "name": self.sender_name
+            },
+            "to": [
+                {
+                    "email": to_email
+                }
+            ],
+            "subject": subject,
+            "text": text_body or "",
+            "html": html_body or text_body or ""
+        }
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
         try:
-            resend.Emails.send({
-                "from": f"{self.sender_name} <onboarding@resend.dev>",
-                "to": [to_email],
-                "subject": subject,
-                "text": text_body or "",
-                "html": html_body or "",
-            })
+            response = httpx.post(
+                self.api_url,
+                json=payload,
+                headers=headers,
+                timeout=10.0
+            )
+            response.raise_for_status()
             print(f"[Email] Sent to {to_email}: {subject}")
+        except httpx.HTTPStatusError as exc:
+            print(f"[Email] Failed with status {exc.response.status_code}: {exc.response.text}")
         except Exception as exc:
             print(f"[Email] Failed: {exc}")
 
