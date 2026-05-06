@@ -5,7 +5,7 @@ import random
 import secrets
 import shutil
 import uuid
-import filetype
+import imghdr
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
@@ -554,7 +554,9 @@ async def verify_email(
 
     if not pending:
         return safe_redirect(f"/verify-email?email={email}&error=not_found", ["/verify-email"])
-    if datetime.now(timezone.utc) > pending.expires_at:
+    # Ensure expires_at is timezone-aware for comparison
+    expires_at = pending.expires_at.replace(tzinfo=timezone.utc) if pending.expires_at.tzinfo is None else pending.expires_at
+    if datetime.now(timezone.utc) > expires_at:
         await db.delete(pending)
         await db.commit()
         return safe_redirect(f"/verify-email?email={email}&error=expired", ["/verify-email"])
@@ -671,7 +673,7 @@ async def create_event(
     )
 
     try:
-        # FIX: attach UTC so SQLite stores exactly what the user typed, no local-tz shift
+        # FIX: attach UTC so asyncpg stores exactly what the user typed, no local-tz shift
         event_date = datetime.fromisoformat(date).replace(tzinfo=timezone.utc)
     except ValueError:
         return templates.TemplateResponse("create.html", {**form_ctx, "error": "invalid_date"})
@@ -788,7 +790,7 @@ async def edit_event(
     )
 
     try:
-        # FIX: attach UTC so SQLite stores exactly what the user typed, no local-tz shift
+        # FIX: attach UTC so asyncpg stores exactly what the user typed, no local-tz shift
         event_date = datetime.fromisoformat(date).replace(tzinfo=timezone.utc)
     except ValueError:
         return templates.TemplateResponse("edit.html", {**form_ctx, "error": "invalid_date"})
@@ -946,7 +948,7 @@ async def event_page(
 
 @app.post("/join/{invite_code}")
 async def confirm_participation(
-    request: Request,
+    reuqest: Request,
     invite_code: str,
     guest_name: str = Form(""),
     # BUG FIX: "join on behalf of another" checkbox — if True, even a logged-in
@@ -972,11 +974,12 @@ async def confirm_participation(
     if not event:
         return RedirectResponse("/join?err=1", status_code=303)
 
-    # Re-check participant count inside a nested transaction to guard against races
+    # Race condition fix: lock the event row with FOR UPDATE
     async with db.begin_nested():
+        # Lock the event row to prevent concurrent modifications
         locked_event = (
             await db.execute(
-                select(Event).where(Event.id == event.id)
+                select(Event).where(Event.id == event.id).with_for_update()
             )
         ).scalar_one()
 
@@ -1182,8 +1185,7 @@ async def upload_avatar(
         return RedirectResponse(f"/profile/{current_user.id}?error=file_too_large", status_code=303)
 
     # Проверка реального формата файла (magic bytes)
-    kind = filetype.guess(content)
-    img_type = kind.mime.split("/")[1] if kind else None
+    img_type = imghdr.what(None, h=content)
     if img_type not in ('jpeg', 'png', 'gif', 'webp'):
         return RedirectResponse(f"/profile/{current_user.id}?error=invalid_file", status_code=303)
 
@@ -1368,7 +1370,9 @@ async def reset_password_submit(
 
     if not reset:
         return RedirectResponse(f"/reset-password?token={token}&error=invalid", status_code=303)
-    if datetime.now(timezone.utc) > reset.expires_at:
+    # Ensure expires_at is timezone-aware for comparison
+    expires_at = reset.expires_at.replace(tzinfo=timezone.utc) if reset.expires_at.tzinfo is None else reset.expires_at
+    if datetime.now(timezone.utc) > expires_at:
         reset.used = True
         await db.commit()
         return RedirectResponse(f"/reset-password?token={token}&error=expired", status_code=303)
