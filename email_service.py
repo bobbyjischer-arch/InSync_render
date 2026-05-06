@@ -16,7 +16,7 @@ class EmailService:
 
     def _send_sync(self, subject, to_email, text_body=None, html_body=None):
         """Синхронная отправка через Resend API"""
-        api_key = os.environ.get("re_BzDBehYN_AgEKoFQe87ZZHDPjqgkD1jbS")
+        api_key = os.environ.get("RESEND_API_KEY")
         if not api_key:
             print("[Email] RESEND_API_KEY not set, skipping")
             return
